@@ -95,6 +95,18 @@ Registered verification key (Kurier vkHash): `0x6ac52f46b1dc0abcf4765532067e3577
 
 Check any of them yourself, without trusting the server: `node scripts/verify-proof.js chk_520636095f5b11bf` re-verifies the Reclaim proof, re-derives the public signals from the attested Paystack fields, and verifies the Groth16 proof (all three passed for every case above). Live job status: `GET /api/zkverify?id=<check_id>`.
 
+## Web app (UI)
+
+The live site (`public/index.html`, one static file: HTML, CSS and vanilla JS, no build step) is **Alert Guard**, "Verify the payment, not the screenshot."
+
+- **Verify a payment**: reference, amount (₦, formatted as you type), optional order/trade ID and payee, with inline validation.
+- **Live progress timeline** while a check runs: Contacting Paystack over zkTLS → Proof generated → Decision → Posted to zkVerify, resolved from the real `/check` response.
+- **Receipt**: a big verdict (*Safe to release* / *Do not release*) with a plain-English reason, what Paystack says (status, amount, currency, txn id, mode), the Reclaim proof (proof id, attestor, cached flag, link to the full proof JSON), and the zkVerify receipt, which polls `/api/zkverify` until Finalized and links the transaction on the explorer. Copy buttons throughout.
+- **Shareable receipt link**: `/?check=<check_id>` (or `#/receipt/<check_id>`) reloads any check from `/api/result`.
+- **Recent checks** are kept in `localStorage` on the device only; click one to reopen its receipt.
+- **Try a sample** (test mode): make a fresh ₦25,000 Paystack test payment, or run the canned scenarios (amount edited ₦50k → ₦500k, fake-screenshot reference, failed charge, abandoned checkout).
+- Stable hooks for automation: inputs `#ref #amt #trade #payee`, button `#go`, samples `[data-r][data-a]`, fresh payment `#fresh`, result `#out`, verdict `.verdict` (`.verdict.approve` / `.verdict.reject`).
+
 ## API
 
 `POST /check`
@@ -146,5 +158,5 @@ Vercel Hobby (serverless Node 24, 60 s max), free Upstash Redis, Reclaim free ti
 - `src/store.js`: Upstash Redis / in-memory store (prefixed keys)
 - `src/http.js`, `api/*.js`: HTTP handlers (Vercel functions); `src/server.js` for local
 - `circuits/`: circom source, wasm, zkey, verification key
-- `public/index.html`: demo page
+- `public/index.html`: the web app (static, no build step)
 - `scripts/verify-proof.js`: third-party verifier
