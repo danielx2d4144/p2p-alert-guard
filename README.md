@@ -80,6 +80,21 @@ Anyone can re-verify it: `identifier == keccak256(provider, parameters, context)
 - **Coverage:** only payments received through the merchant's Paystack account. Direct bank transfers to a personal account need a bank/aggregator API (Mono, Okra, a bank's statement API). The same zkFetch pattern applies.
 - **Paystack's attestor can only sign 2xx responses**, so `NOT_FOUND` (HTTP 400) is decided from a plain HTTPS call and carries no zk proof. It's a REJECT, which is the safe direction.
 
+## Live proof references (zkVerify testnet, 2026-10-24)
+
+Real runs against https://p2p-alert-guard.vercel.app using Paystack **test-mode** transactions (`ALLOW_TEST_MODE=true`). Each check made one real Reclaim zkFetch (except the cached re-check), produced a Groth16 decision proof, and submitted it to zkVerify testnet through Kurier. All four jobs reached `Finalized`.
+
+| Case | check_id | Result | zkVerify tx |
+|---|---|---|---|
+| Paid ₦25,000, claim ₦25,000 (`p2pguard-ok-001`) | `chk_520636095f5b11bf` | APPROVE_RELEASE / OK | [0x2e8fcf0c…f7b709](https://zkverify-testnet.subscan.io/extrinsic/0x2e8fcf0cd18a956b8a6a378aef5a812a9bc2c671401f9450396a0b1957f7b709) |
+| Same reference, new trade (cached proof, no new zkFetch) | `chk_07ddb7fbb031e450` | REJECT / REFERENCE_REUSED | [0xa7d1feab…01af55](https://zkverify-testnet.subscan.io/extrinsic/0xa7d1feabb0a59bcd8885c7faf29899bcbee9d8ba3d4d9f4c019c599c9801af55) |
+| Paid ₦50,000, claim ₦500,000 (`p2pguard-ok-002`) | `chk_4d3809f04740608c` | REJECT / AMOUNT_MISMATCH | [0x3f70abd9…99332d](https://zkverify-testnet.subscan.io/extrinsic/0x3f70abd99e5446d492ab7420c65d5afb383dd334c2b7e2afdee2793a4899332d) |
+| Failed payment (`p2pguard-fail-001`) | `chk_eef1e6b80d03ed76` | REJECT / NOT_SUCCESS | [0x1e1e7b74…ab509df](https://zkverify-testnet.subscan.io/extrinsic/0x1e1e7b74862670355d4eacf8f509aedbdad9a7182e71c7aec623d8292ab509df) |
+
+Registered verification key (Kurier vkHash): `0x6ac52f46b1dc0abcf4765532067e3577e684e9d9ca97bd54734a60adec23e5d2`. Reclaim attestor: `0x244897572368eadf65bfbc5aec98d8e5443a9072`.
+
+Check any of them yourself, without trusting the server: `node scripts/verify-proof.js chk_520636095f5b11bf` re-verifies the Reclaim proof, re-derives the public signals from the attested Paystack fields, and verifies the Groth16 proof (all three passed for every case above). Live job status: `GET /api/zkverify?id=<check_id>`.
+
 ## API
 
 `POST /check`
